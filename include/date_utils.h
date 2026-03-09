@@ -1,10 +1,10 @@
 #ifndef DATE_UTILS_H
 #define DATE_UTILS_H
 
-#include <string>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+#include <string>
 
 inline std::string get_current_iso8601() {
     auto now = std::time(nullptr);
@@ -14,4 +14,4 @@ inline std::string get_current_iso8601() {
     return oss.str();
 }
 
-#endif // DATE_UTILS_H
+#endif  // DATE_UTILS_H
