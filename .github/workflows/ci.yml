@@ -2,33 +2,56 @@ name: C++ CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
-  build-and-test:
+  format:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Run Formatter Check
+        run: find . -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake clang-format cppcheck
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+      - name: Run Linter
+        run: make lint
 
-    - name: Run Formatter Check
-      run: |
-        # Instead of just formatting, we check if it is formatted correctly
-        # We run clang-format and check for differences
-        find . -name "*.cpp" -o -name "*.h" | xargs clang-format --dry-run --Werror
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential
+      - name: Build
+        run: make build
+      - name: Upload build directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: build/
 
-    - name: Run Linter
-      run: make lint
-
-    - name: Build
-      run: make build
-
-    - name: Run Tests
-      run: make test
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake
+      - name: Download build directory
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+          path: build/
+      - name: Run Tests
+        run: |
+          chmod +x build/unit_tests
+          make test
